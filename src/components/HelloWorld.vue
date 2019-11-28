@@ -1,6 +1,6 @@
 <template>
-  <div class="d-flex" id="wrapper" style="margin-left:2%; width:8%;">
-    <div style="height:300px;">
+  <div class="d-flex" id="wrapper" style="margin-left:2%;">
+    <div style="height:300px; width:10%;">
       <div class="sidebar-heading">
         <b>Patient Information</b>
       </div>
@@ -62,14 +62,20 @@
       </div>
     </div>
 
-    <div style="margin-left:35%">
+    <div style="margin-left:2%">
       <line-chart></line-chart>
     </div>
-    <div  style="margin-left:70%; width:100%;">
-    <h5>We will be inserting the text details here </h5>
-    
-    </div>
 
+    <div style="margin-left:5%; margin-left:2%; width: 35%;" id="1">
+      <h5 style="background-color:blue">We will be inserting the text details here
+      <br>
+      We will be inserting the text details here
+      <br>
+      We will be inserting the text details here
+      <br>
+      We will be inserting the text details here
+      </h5>
+    </div>
   </div>
 </template>
 
