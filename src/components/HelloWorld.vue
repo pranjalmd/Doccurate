@@ -1,40 +1,79 @@
 <template>
-  <div >
-    <div class="d-flex" id="wrapper" style="margin-left:2%; width:15%">
-      <!-- Sidebar -->
-      <div style="height:300px;">
-          <div class=" sidebar-heading">Patient Information</div>
-          <div>
-            <a href="#" class="list-group-item list-group-item-action bg-light">Name</a>
+  <div class="d-flex" id="wrapper" style="margin-left:2%; width:8%;">
+    <div style="height:300px;">
+      <div class="sidebar-heading">
+        <b>Patient Information</b>
+      </div>
+      <div>
+        <h6 class="list-group-item list-group-item-action bg-light">
+          <b>Name:</b>
+          <br />
+          <br />
+          <b>Age:</b>
+          <br />
+          <br />
+          <b>Height:</b>
+          <br />
+          <br />
+          <b>Weight:</b>
+          <br />
+          <br />
+          <b>Gender:</b>
+        </h6>
+        <!-- <a href="#" class="list-group-item list-group-item-action bg-light">Name</a>
             <a href="#" class="list-group-item list-group-item-action bg-light">Age</a>
             <a href="#" class="list-group-item list-group-item-action bg-light">Height</a>
             <a href="#" class="list-group-item list-group-item-action bg-light">Weight</a>
             <a href="#" class="list-group-item list-group-item-action bg-light">info1</a>
-            <a href="#" class="list-group-item list-group-item-action bg-light">info2</a>
-          </div>
-          <div style="margin-top: 25%;" class="sidebar-heading">Filter Collection </div>
-          <div>
-            <button class="list-group-item list-group-item-action bg-light" type="button">disease1</button>
-            <button class="list-group-item list-group-item-action bg-light" type="button">disease2</button>
-            <button class="list-group-item list-group-item-action bg-light" type="button">disease3</button>
-            <button class="list-group-item list-group-item-action bg-light" type="button">disease4</button>
-          </div>
+        <a href="#" class="list-group-item list-group-item-action bg-light">info2</a>-->
       </div>
-      <!-- /#sidebar-wrapper -->
+      <div style="margin-top: 25%;" class="sidebar-heading">
+        <b>Filter Collection</b>
+      </div>
+      <div>
+        <button
+          style="color:blue;"
+          class="list-group-item list-group-item-action bg-light"
+          type="button"
+        >
+          <b>disease1</b>
+        </button>
+        <button
+          style="color:red;"
+          class="list-group-item list-group-item-action bg-light"
+          type="button"
+        >
+          <b>disease2</b>
+        </button>
+        <button
+          style="color:green;"
+          class="list-group-item list-group-item-action bg-light"
+          type="button"
+        >
+          <b>disease3</b>
+        </button>
+        <button
+          style="color:brown;"
+          class="list-group-item list-group-item-action bg-light"
+          type="button"
+        >
+          <b>disease4</b>
+        </button>
+      </div>
     </div>
 
-  <div style="margin-left: 5%" class = "column" id="wrapper">
-    <div>   <line-chart></line-chart> </div>
-    <div>   <line-chart></line-chart> </div>
+    <div style="margin-left:35%">
+      <line-chart></line-chart>
+    </div>
+    <div  style="margin-left:70%; width:100%;">
+    <h5>We will be inserting the text details here </h5>
+    
+    </div>
+
   </div>
-  
-    
-    
-    
-   
-  </div>
-  
 </template>
+
+
 
 <script>
 import LineChart from "./LineChart";
