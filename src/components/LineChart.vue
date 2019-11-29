@@ -224,30 +224,13 @@ export default {
     d3.csv("temp_bar_data.csv", function(error, data) {
       if (error) throw error;
 
-      //================================
-      
-      var sortable = [];
-      for (var vehicle in data) {
-        sortable.push([data[vehicle].name, data[vehicle].val]);
-      }
-      sortable.sort(function(a, b) {
-        return a[1] - b[1];
-      });
-      console.log(sortable.reverse());
-      
-      // var data = new Object;
-
-      for(var i in sortable) {
-        // console.log(sortable[i][0], sortable[i][1]);
-        // data[sortable[i][0]] = sortable[i][1];
-      }
-      // data = JSON.parse(data);
-      //================================
-      // console.log(data[0].name, data[0].val);
-
       data.forEach(function(d) {
         d.name = d.name;
         d.val = +d.val;
+      });
+
+      data.sort(function(a, b) {
+        return a.val - b.val;
       });
 
       x.domain([
@@ -257,8 +240,8 @@ export default {
         })
       ]);
       y.domain(
-        data.map(function(d) {
-          return d.name;
+        data.map(function(d, i) {
+          return i;
         })
       ).padding(0.1);
 
@@ -278,7 +261,7 @@ export default {
       // svg1
       //   .append("g")
       //   .attr("class", "y axis")
-      //   .call(d3.axisLeft(y));
+      // .call(d3.axisLeft(y));
 
       svg1
         .selectAll(".bar")
@@ -287,13 +270,30 @@ export default {
         .append("rect")
         .attr("class", "bar")
         .attr("x", 0)
-        .attr("height", y.bandwidth())
-        .attr("y", function(d) {
-          return y(d.name);
+        .style("fill", "pink")
+        .attr("height", y.bandwidth() - 15)
+        .attr("y", function(d, i) {
+          return y(i);
         })
         .attr("width", function(d) {
           return x(d.val);
         });
+
+        svg1
+        .selectAll("text")
+        .data(data)
+        .enter()
+        .append("text")
+        .text(function (d) { return d.name; })
+        .attr("x", 0)
+        .attr("y", function(d, i) {
+          return y(i) + 15;
+        })
+        .style("fill", "green");
+
+
+      
+        
     });
   }
 };
