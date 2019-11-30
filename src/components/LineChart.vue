@@ -2,7 +2,6 @@
   <div id="my_dataviz"></div>
 </template>
 
-
 <script>
 import * as d3 from "d3";
 
@@ -187,8 +186,7 @@ export default {
       }
     );
 
-    //code for the side bar starts here
-    //for side bar chart
+    //horizontal bar chart
     var margin_for_bar_chart = { top: 5, right: 5, bottom: 5, left: 5 },
       width_for_bar_chart = 200 - margin.left - margin.right,
       height_for_bar_chart = 450 - margin.top - margin.bottom;
@@ -245,24 +243,6 @@ export default {
         })
       ).padding(0.1);
 
-      // svg1
-      //   .append("g")
-      //   .attr("class", "x axis")
-      //   .attr("transform", "translate(0," + height_for_bar_chart + ")")
-      //   .call(
-      //     d3
-      //       .axisBottom(x)
-      //       // .tickFormat(function(d) {
-      //       //   return parseInt(d / 1000);
-      //       // })
-      //       // .tickSizeInner([-height_for_bar_chart])
-      //   );
-
-      // svg1
-      //   .append("g")
-      //   .attr("class", "y axis")
-      // .call(d3.axisLeft(y));
-
       svg1
         .selectAll(".bar")
         .data(data)
@@ -279,23 +259,82 @@ export default {
           return x(d.val);
         });
 
-        svg1
+      svg1
         .selectAll("text")
         .data(data)
         .enter()
         .append("text")
-        .text(function (d) { return d.name; })
+        .text(function(d) {
+          return d.name;
+        })
         .attr("x", 0)
         .attr("y", function(d, i) {
-          return y(i) + 15;
+          return y(i) + 12;
         })
         .style("fill", "green");
+      //horizontal bar chart end
+    });//horizontal bar chart csv closed
 
+    //patient info tab dynamic property
+    d3.select("#patientinfo")
+      .selectAll("*")
+      .remove();
 
-      
+    d3.csv("Patient1_info.csv", function(error, data) {
+      if (error) throw error;
+
+      data.forEach(function(d) {
+        d.key = d.key.toUpperCase();
+        d.val = d.val;
+      });
+
+      var pat = d3
+        .select("#patientinfo")
+        .selectAll("h6")
+        .data(data)
+        .enter()
+        .append("h6")
+        .style("width", "150px")
+        .style("margin-top", "11%")
+        .style("margin-left", "2%")
+        .text(function(d) {
+          return d.key + ": ";
+        })
+        .style("text-align", "left")
+        .style("font-weight", "bold")
+        .append()
+        .text(function(d) {
+          return d.val;
+        })
+        .style("font-weight", "normal")
+        .style("text-align", "left")
         
-    });
-  }
+      //patient info tab dynamic property end
+    });//patient_info csv closed
+
+    d3.csv("Patient1_text.csv", function(error, data) {
+      if (error) throw error;
+
+      d3.select("#textdetails")
+        .selectAll("h6")
+        .data(data)
+        .enter()
+        .append("h6")
+        .text(function(d) {
+          return d.key + ": ";
+        })
+        .style("text-align", "left")
+        .style("margin-top", "3%")
+        .style("font-weight", "bold")
+        .append()
+        .text(function(d){
+          return d.val;
+        })
+        .style("font-weight", "normal");
+        
+    });//patient text data csv closed
+    
+  } //end of the mounted function
 };
 </script>
 
