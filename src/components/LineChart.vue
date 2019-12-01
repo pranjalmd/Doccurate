@@ -1,21 +1,93 @@
 <template>
-<div>
+<div class="d-flex" id="wrapper" style="margin-left:2%;">
+    <div style="height:300px; width:11%;">
+      <div style = "background-color: lightgray;text-align: left" class="sidebar-heading">
+        <b style="margin-left:2%;">Patient Information</b>
+      </div>
+      <div style = "background-color: lightgray; overflow:hidden;" id = "patientinfo">
+      </div>
+      <div style="margin-top: 20%;" class="sidebar-heading">
+        <b>Filter Collection</b>
+      </div>
+      <div >
+        <button
+          style="color:blue; cursor: pointer; border-radius: 40px; background-color: lightgray; "
+          class="list-group-item list-group-item-action"
+          type="button"
+          @click = "tempfn"
+        >
+        <b>disease1</b>
+        </button>
+        <button
+          style="color:red; cursor: pointer; border-radius: 40px; background-color: lightgray; margin-top:1%;"
+          class="list-group-item list-group-item-action"
+          type="button"
+        >
+          <b>disease2</b>
+        </button>
+        <button
+          style="color:green; cursor: pointer; border-radius: 40px; background-color: lightgray; margin-top:1%;"
+          class="list-group-item list-group-item-action"
+          type="button"
+        >
+        <b>disease3</b>
+        </button>
+        <button
+          style="color:brown; cursor: pointer; border-radius: 40px; background-color: lightgray; margin-top:1%;"
+          class="list-group-item list-group-item-action"
+          type="button"
+        >
+          <b>disease4</b>
+        </button>
+      </div>
+    </div>
+
+
+    <!-- Volin Plot From here -->
+    <div style="margin-left:2%">
+      <button type="button" @click="onClickBack">BACK!</button>
+      <div id="my_dataviz"></div>
+    </div>
+
+    <!-- Patient Records from here -->
+    <!-- <div style="margin-left:2%; width: 35%;" id="textdetails"> -->
+    
+    <div style="margin-left:2%; width: 35%;">
+      <div style="background-color:rgba(0,0,0,0.1)">{{items.length}}</div>
+      <div style="background-color:rgba(0,0,0,0.1)">{{this.position + 1}}</div>
+      
+      <virtual-list :size="40" :remain="8" :variable="true" class="hello" style="height: 75vh;" ref="scroller"  @scroll.native="myMethod">
+        <!-- <div v-for="item of items" :key="item.id" :style="{ height: item.height + 'px' }" ><item-div   v-for="item of items" :key="item.id" v-bind:mydata="item"></item-div> -->
+        <item-div   v-for="(val,key,index) of items" :key="key" v-bind:mydata="val"    v-bind:class="index"></item-div> 
+      </virtual-list>
+    </div>
+  
+    </div>
+  <!-- </div> -->
+
+
+
+<!-- <div>
   <button type="button" @click="onClickBack">BACK!</button>
   <div id="my_dataviz"></div>
     
- </div>
+ </div> -->
 </template>
 
 <script>
 import * as d3 from "d3";
 import { parse } from 'path';
 import { constants } from 'fs';
+import Item from "./Items";
+import virtualList from 'vue-virtual-scroll-list'
+import { fuchsia } from 'color-name';
 var lvl = "FC Tuples";
 var level_selected = 0;
 var level_value = "";
 var parent_stack = []
 var x_domain_values = [];
 var initial_max = 0;
+var medical_records = [{"id":1}, {"id":3}];
 
 export default {
   name: "LineChart",
@@ -25,8 +97,53 @@ export default {
       default: null
     }
   },
+  data () {
+      
+      var res = []
+      return {
+        items: res,
+        position: 0
+      }
+    },
+  components: { 
+    "item-div": Item,
+    'virtual-list': virtualList 
+   },
+  
   methods: {
+  
+    myMethod: function(event) {
+  
+          console.log("adffafsafsafsaf", event);
+          var off = 0
+          if(this.items.length > 30){
+            off = this.items.length * 3.6
+          }
+          console.log(off);
+          var len = ((event.target.scrollHeight - off)/ this.items.length);
+          var pos = Math.round(event.target.scrollTop / len);
+          // console.log("Position",pos, len, event.target.scrollTop,event.target.scrollHeight, len * this.items.length );
+          this.position = pos;
+
+          
+    },
+    setNewValue: function (data) {
+    console.log("Data Set %%%%%%%%%%%%%%%%%%%%", data);
+                this.items = data;
+                console.log(this.items)
+    },
+    scroll_to_top : function(){
+      // this.["scroller"].scrollTop = 0
+      this.$refs["scroller"].setScrollTop();
+      console.log("References", this.$refs["scroller"])
+    },
+    tempfn: function(){
+      alert("gqacdjgaef");
+    },
     onClickBack: function(){
+      
+      
+      console.log(fn);
       if(level_selected <= 0){
         return;
       }
@@ -36,9 +153,13 @@ export default {
       console.log(level_selected, level_value)
       d3.select("#my_dataviz").selectAll("svg").remove();
       this.updateDataFunc();
+      this.$refs["scroller"].setScrollTop();
+
+      
     },
 
-    updateDataFunc :  function updateData(){
+    updateDataFunc :  function (){
+      var that = this;
       // set the dimensions and margins of the graph
       var margin = { top: 10, right: 30, bottom: 30, left: 40 },
         width = 460 - margin.left - margin.right,
@@ -102,12 +223,14 @@ export default {
                 });
 
 
-
+            var record = []
             var sumstat = d3
                 .nest() // nest function allows to group the calculation per level of a factor
                 .key(function(d,i) {
                   // return d.Species;
                   if(level_selected == 1 && d["FC Tuples"] == level_value){
+                      record.push(d);
+                      console.log("Record", d);
                       return d["Disease Tuples"].trim();
                   }else if(level_selected == 1){
                     return " ";
@@ -115,7 +238,9 @@ export default {
                   // console.log(d["Disease Tuples"],level_value);
                   if(level_selected == 2 && d["Disease Tuples"].trim() == level_value){
                      console.log("Disease-------",d);
+                     record.push(d);
                       return d["Sympton Tuples"].trim();
+                      
                   }else if(level_selected == 2){
                     return " ";
                   }
@@ -123,7 +248,9 @@ export default {
                   
                   if(d[lvl]){
                     // console.log(i, d[lvl]);
+                    record.push(d);
                     return d[lvl];
+                    
                   }else{
                     return " ";
                   }
@@ -144,6 +271,10 @@ export default {
                 .entries(data_patient);
             console.log("afsdfasdf",sumstat);
 
+            console.log("##############",record);
+            that.setNewValue(record);
+            // medical_records = record;
+            
             x_domain_values = []
             var del_index = -1
             for( let index in sumstat){
@@ -279,7 +410,8 @@ export default {
                                     console.log("Parent Stack ", parent_stack);
                                     d3.select("#my_dataviz").selectAll("svg").remove();
                                     console.log("Updated Variables : ", level_selected, level_value)
-                                    updateData();
+                                    that.updateDataFunc();
+                                    that.$refs["scroller"].setScrollTop();
 
                                     // renderVisualization(data_patient);
                                   });
@@ -546,6 +678,8 @@ export default {
     }
   },
   mounted: function() {
+  
+  // this.$refs['scroller'].addEventListener("scroll", this.myMethod);
     // var lvl = "FC Tuples";
     // var level_selected = 0;
     // var level_value = "Nephrology";
