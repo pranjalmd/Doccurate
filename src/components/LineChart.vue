@@ -6,6 +6,11 @@
 import * as d3 from "d3";
 import { parse } from 'path';
 import { constants } from 'fs';
+var lvl = "FC Tuples";
+var level_selected = 0;
+var level_value = "";
+var x_domain_values = [];
+var initial_max = 0;
 
 export default {
   name: "LineChart",
@@ -17,10 +22,10 @@ export default {
   },
   
   mounted: function() {
-    var lvl = "FC Tuples";
-    var level_selected = 0;
-    var level_value = "Nephrology";
-    var x_domain_values = []
+    // var lvl = "FC Tuples";
+    // var level_selected = 0;
+    // var level_value = "Nephrology";
+    // var x_domain_values = []
 
     //  Selected data and selected level;
     function updateData(){
@@ -37,6 +42,9 @@ export default {
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+        var svg_transition = d3.select("#my_dataviz").transition();
         d3.csv("final_1.csv",
             function(data_patient) {
               console.log("patient 1 csv", data_patient);
@@ -94,6 +102,13 @@ export default {
                   }else if(level_selected == 1){
                     return " ";
                   }
+                  if(level_selected == 2 && d["Disease Tuples"] == level_value){
+                      return d["Sympton Tuples"].trim();
+                  }else if(level_selected == 1){
+                    return " ";
+                  }
+
+
                   if(d[lvl]){
                     console.log(i, d[lvl]);
                     return d[lvl];
@@ -193,6 +208,10 @@ export default {
                 }
               }
 
+              if (level_selected == 0){
+                initial_max = maxNum
+              }
+
 
 
 
@@ -237,9 +256,12 @@ export default {
                                   .selectAll("text")
                                   .attr("transform", "rotate(-30)")
                                   .on("click", function(d,i) {  
-                                    alert(d + i);
-                                    level_selected = 1;
+                                    // alert(d + i);
+                                    
+                                    level_selected += 1;
+                                    level_value = d;
                                     d3.select("#my_dataviz").selectAll("svg").remove();
+                                    console.log("Updated Variables : ", level_selected, level_value)
                                     updateData();
 
                                     // renderVisualization(data_patient);
@@ -273,7 +295,7 @@ export default {
               var xNum = d3
                 .scaleLinear()
                 .range([0, x.bandwidth()])
-                .domain([-maxNum, maxNum]);
+                .domain([-initial_max, initial_max]);
 
               // This allows to find the closest X index of the mouse:
               var bisect = d3.bisector(function(d) {
@@ -505,6 +527,8 @@ export default {
       });//patient text data csv closed
       
     }
+
+    
     updateData();
 
   var renderVisualization = function(data_data, level){
