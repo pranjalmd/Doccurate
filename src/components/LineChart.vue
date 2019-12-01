@@ -56,13 +56,14 @@
       <div style="background-color:rgba(0,0,0,0.1)">{{items.length}}</div>
       <div style="background-color:rgba(0,0,0,0.1)">{{this.position + 1}}</div>
       
-      <virtual-list :size="40" :remain="8" :variable="true" class="hello" style="height: 75vh;" ref="scroller"  @scroll.native="myMethod">
+      <virtual-list :size="1000" :remain="1000" :variable="true" class="hello" style="height: 75vh;" ref="scroller"  @scroll.native="myMethod">
         <!-- <div v-for="item of items" :key="item.id" :style="{ height: item.height + 'px' }" ><item-div   v-for="item of items" :key="item.id" v-bind:mydata="item"></item-div> -->
         <item-div   v-for="(val,key,index) of items" :key="key" v-bind:mydata="val"    v-bind:class="index"></item-div> 
       </virtual-list>
     </div>
-  
+     <button id="goToTopBtn" type="button" @click="onClickTop">GO TO TOP!</button>
     </div>
+    
   <!-- </div> -->
 
 
@@ -113,17 +114,26 @@ export default {
   methods: {
   
     myMethod: function(event) {
+
+          var mybutton = document.getElementById("goToTopBtn");
+          if (this.position >= 1) {
+               mybutton.style.display = "block";
+          } else {
+            mybutton.style.display = "none";
+          }
   
           console.log("adffafsafsafsaf", event);
           var off = 0
-          if(this.items.length > 30){
-            off = this.items.length * 3.6
-          }
-          console.log(off);
+          // if(this.items.length > 30){
+            off = (this.items.length -1) * 3.4
+          // }
+          // console.log(off);
           var len = ((event.target.scrollHeight - off)/ this.items.length);
           var pos = Math.round(event.target.scrollTop / len);
           // console.log("Position",pos, len, event.target.scrollTop,event.target.scrollHeight, len * this.items.length );
           this.position = pos;
+          this.position = Math.min(pos, this.items.length -1 );
+          console.log(event.target.scrollTop, this.position, event.target.scrollHeight);
 
           
     },
@@ -132,33 +142,33 @@ export default {
                 this.items = data;
                 console.log(this.items)
     },
-    scroll_to_top : function(){
-      // this.["scroller"].scrollTop = 0
-      this.$refs["scroller"].setScrollTop();
-      console.log("References", this.$refs["scroller"])
-    },
+
     tempfn: function(){
       alert("gqacdjgaef");
     },
+    onClickTop:function(){
+    
+      this.$refs["scroller"].setScrollTop();
+    },
     onClickBack: function(){
       
-      
-      console.log(fn);
       if(level_selected <= 0){
         return;
       }
       level_selected -= 1;
       console.log("Parent Stack ", parent_stack);
       level_value = parent_stack.pop();
-      console.log(level_selected, level_value)
       d3.select("#my_dataviz").selectAll("svg").remove();
-      this.updateDataFunc();
       this.$refs["scroller"].setScrollTop();
+      this.updateDataFunc();
+      
 
       
     },
 
     updateDataFunc :  function (){
+      console.log(this.$refs["scroller"]);
+      // this.$refs["scroller"].setScrollTop();
       var that = this;
       // set the dimensions and margins of the graph
       var margin = { top: 10, right: 30, bottom: 30, left: 40 },
@@ -178,18 +188,8 @@ export default {
         var svg_transition = d3.select("#my_dataviz").transition();
         d3.csv("final_1.csv",
             function(data_patient) {
-              // console.log("patient 1 csv", data_patient);
-
-              var FCs = data_patient.map(function(d){
-                return d.Filter_Collection;
-              })
-              var FCs_unique = [...new Set(FCs)]
-              // console.log("FCs", FCs_unique);
-
           // Read the data and compute summary statistics for each specie
-          d3.csv(
-            "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv",
-            function(data) {
+      
 
 
 
@@ -211,14 +211,10 @@ export default {
               var histogram = d3
                 .histogram()
                 .domain(function(){
-                  // console.log("Hist Domain",y.domain().map(function(d){ return Date.parse(d)}));
-                  
                   return y.domain().map(function(d){ return Date.parse(d);});
                 })
                 .thresholds(y.ticks(20)) // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
                 .value(function(d){
-
-                  // console.log("Hist",d);
                   return d;
                 });
 
@@ -227,7 +223,6 @@ export default {
             var sumstat = d3
                 .nest() // nest function allows to group the calculation per level of a factor
                 .key(function(d,i) {
-                  // return d.Species;
                   if(level_selected == 1 && d["FC Tuples"] == level_value){
                       record.push(d);
                       console.log("Record", d);
@@ -235,7 +230,6 @@ export default {
                   }else if(level_selected == 1){
                     return " ";
                   }
-                  // console.log(d["Disease Tuples"],level_value);
                   if(level_selected == 2 && d["Disease Tuples"].trim() == level_value){
                      console.log("Disease-------",d);
                      record.push(d);
@@ -259,81 +253,26 @@ export default {
                   // For each key..
 
                   var input = d.map(function(g) {
-                    // return g.Sepal_Length;
                     return Date.parse(g.start, "mm/dd/yyyy");
                   }); // Keep the variable called Sepal_Length
-                  // console.log("Input", input);
                   var bins = histogram(input); // And compute the binning on it.
-                  // console.log(bins);
                   return bins;
                 })
-                // .entries(data);
                 .entries(data_patient);
-            console.log("afsdfasdf",sumstat);
 
-            console.log("##############",record);
             that.setNewValue(record);
-            // medical_records = record;
             
             x_domain_values = []
             var del_index = -1
             for( let index in sumstat){
                 if(sumstat[index]['key'] == " "){
-                  console.log("Found",sumstat[index], index);
                   del_index = index;
-                  console.log("XXXXXX to x_domain",sumstat[index]['key']);
-                  
                 }
                 else{
                     x_domain_values.push(sumstat[index]['key'])
-                    console.log("Added to x_domain",sumstat[index]['key']);
                 }
-                // console.log("afsdfasdf",sumstat[index], index);
               }
               sumstat.splice(del_index, 1);
-        
-              // //Creates Bins
-              // var fc_dic = {}
-              // // console.log(data_patient);
-              // for (var i =0 ; i < data_patient.length; i++){
-              //   // console.log("Patient", data_patient[i]);
-              //   var fc_tuple = data_patient[i]['FC Tuples'];
-              //   var fc_list = fc_tuple.split(" ");
-              //   for(var j = 0; j < fc_list.length; j++){
-              //     if(fc_list[j] in fc_dic){
-              //       fc_dic[fc_list[j]].push(data_patient[i])  
-              //     }
-              //     else{
-              //       fc_dic[fc_list[j]] = [data_patient[i]]
-              //     }
-              //   }
-                
-
-              // }
-              // console.log(fc_dic);
-
-              // var sumstat_var = []
-              // for(var i in fc_dic){
-              //   var temp_dic = {}
-              //   if(i == ""){
-              //     continue;
-              //   }
-              //   temp_dic['key'] = i;
-
-              //   var input = fc_dic[i].map(function(g) {
-              //       // return g.Sepal_Length;
-              //       return Date.parse(g.start, "mm/dd/yyyy");
-              //     }); // Keep the variable called Sepal_Length
-              //     // console.log("Input", input);
-              //   var bins = histogram(input); // And compute the binning on it.
-              //   temp_dic['value'] = bins;
-              //   sumstat_var.push(temp_dic);
-              // }
-              // console.log("$$$$$",sumstat_var)
-
-
-
-
 
               // What is the biggest number of value in a bin? We need it cause this value will have a width of 100% of the bandwidth.
               var maxNum = 0;
@@ -341,7 +280,6 @@ export default {
               
               for (let i in sumstat) {
                 var allBins = sumstat[i].value;
-                // console.log("All Bins: ", allBins);
                 var lengths = allBins.map(function(a) {
                   return a.length;
                 });
@@ -355,42 +293,12 @@ export default {
                 initial_max = maxNum
               }
 
-
-
-
-
-
-
-          
-
-              // Build and Show the X scale. It is a band scale like for a boxplot: each group has an dedicated RANGE on the axis. This range has a length of x.bandwidth
-              var x_domain_values_new = x_domain_values.map(function(d){
-                // console.log("Map Func",typeof(d));
-                return d.trim();
-              })
-              var zp = 0;
-              x_domain_values_new.map(function(d){
-                console.log("Map Func:",d,":", zp++);
-                // return d.trim();
-              })
-              var x = d3
-                .scaleBand()
-                .range([0, width])
-                // .domain(["setosa", "versicolor", "virginica"])
-                .domain(x_domain_values_new)
-                .padding(0.05); // This is important: it is the space between 2 groups. 0 means no padding. 1 is the maximum.
-
               var x_top = d3
                 .scaleBand()
                 .range([0, width])
-                // .domain(["setosa", "versicolor", "virginica"])
-                .domain(x_domain_values_new)
+                .domain(x_domain_values)
                 .padding(0.05); // This is important: it is the space between 2 groups. 0 means no padding. 1 is the maximum.
-
-              console.log("%%%%%%%%%% ::", x_top("Angiomyolipoma") );
-              // svg.append("g")
-              //   .attr("transform", "translate(0," + height + ")")
-              //   .call(d3.axisBottom(x))
+              
               var x_label_axis = svg
                                   .append("g")
                                   .attr("transform", "translate(0," + 30 + ")")
@@ -403,47 +311,17 @@ export default {
                                       return;
                                     }
                                     parent_stack.push(level_value);
-                                    // console.log("Parent Stack ", parent_stack);
                                     level_selected += 1;
                                     level_value = d;
-                                    // parent_stack.push(d);
                                     console.log("Parent Stack ", parent_stack);
                                     d3.select("#my_dataviz").selectAll("svg").remove();
-                                    console.log("Updated Variables : ", level_selected, level_value)
                                     that.updateDataFunc();
-                                    that.$refs["scroller"].setScrollTop();
-
-                                    // renderVisualization(data_patient);
                                   });
-
-      
-              
-
-
-            
-
-
-              // Compute the binning for each group of the dataset
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
               // The maximum width of a violin must be x.bandwidth = the width dedicated to a group
               var xNum = d3
                 .scaleLinear()
-                .range([0, x.bandwidth()])
+                .range([0, x_top.bandwidth()])
                 .domain([-initial_max, initial_max]);
 
               // This allows to find the closest X index of the mouse:
@@ -524,8 +402,7 @@ export default {
                     .duration(500)
                     .style("opacity", 0);
                 });
-            }
-          );
+          
       });
       //horizontal bar chart
       var margin_for_bar_chart = { top: 5, right: 5, bottom: 5, left: 5 },
@@ -1230,5 +1107,20 @@ div.tooltip {
   border: 0px;
   border-radius: 8px;
   pointer-events: none;
+}
+#goToTopBtn {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 30px;
+  z-index: 99;
+  font-size: 12px;
+  border: none;
+  outline: none;
+  background-color: rgba(255,0,0,0.8);
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
 }
 </style>
