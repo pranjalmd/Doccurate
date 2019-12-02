@@ -1,25 +1,42 @@
 <template>
   <div class="box">
+    <text-highlight :queries="keywords" >{{ this.mydata["Medical record"] }}</text-highlight>
     <!-- <p>{{this.props.data}}</p> -->
-    <h4>{{this.mydata["ENCOUNTER"]}}</h4>
+    <h4>{{this.keywords["ENCOUNTER"]}}</h4>
     <p>{{this.mydata["start"]}}</p>
     <p>{{this.mydata["stop"]}}</p>
     <p>{{this.mydata["Date_of_birth"]}}</p>
-    <p>{{this.mydata["Medical record"]}}</p>
+   
   </div>
 </template>
 
 
 <script>
+import Vue from 'vue';
+import TextHighlight from 'vue-text-highlight';
+ 
+Vue.component('text-highlight', TextHighlight);
 
 export default {
   name: "item",
   props: {
-    mydata: Object
+    mydata: Object,
+    keywords: {
+        type: Array,
+        default: [1]
+    }
   },
+  data() {
+        return {
+            queries: ['birds', 'scatt'],
+            description: 'Tropical birds scattered as Drake veered the Jeep',
+            activeColor: 'red',
+            fontSize: 30
+        };
+    },
   methods: {
     tempfn: function(){
-      console.log(this.mydata);
+      console.log(this.keywords);
     }
   },
   mounted: function(){

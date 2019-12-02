@@ -1,6 +1,7 @@
 <template>
   <div class="d-flex" id="wrapper" style="margin-left:2%;">
     <div style="height:300px; width:11%;">
+      <button id="toggleData" type="button" @click="onToggleData">Toggle Data</button>
       <div style="background-color: lightgray;text-align: left" class="sidebar-heading">
         <b style="margin-left:2%;">Patient Information</b>
       </div>
@@ -65,11 +66,11 @@
         ref="scroller"
         @scroll.native="myMethod"
       >
-        <!-- <div v-for="item of items" :key="item.id" :style="{ height: item.height + 'px' }" ><item-div   v-for="item of items" :key="item.id" v-bind:mydata="item"></item-div> -->
         <item-div
           v-for="(val,key,index) of items"
           :key="key"
           v-bind:mydata="val"
+          v-bind:keywords="keywords"
           v-bind:class="index"
         ></item-div>
       </virtual-list>
@@ -92,7 +93,16 @@ var parent_stack = [];
 var x_domain_values = [];
 var selected_index = 0;
 var initial_max = 0;
-var medical_records = [{ id: 1 }, { id: 3 }];
+var medical_records = [];
+var sum_stat_records;
+var encounter_id = "";
+var y_axix;
+var y_selected_val = 0;
+var margin = { top: 10, right: 30, bottom: 30, left: 40 };
+var width = 460 - margin.left - margin.right;
+var height = 400 - margin.top - margin.bottom;
+var patients = ["final_1.csv", "final_2.csv"];
+var selected_dataSet_file = 0;
 
 export default {
   name: "LineChart",
@@ -106,7 +116,8 @@ export default {
     var res = [];
     return {
       items: res,
-      position: 0
+      position: 0,
+      keywords: []
     };
   },
   components: {
@@ -115,6 +126,71 @@ export default {
   },
 
   methods: {
+    onToggleData: function() {
+      lvl = "FC Tuples";
+      level_selected = 0;
+      level_value = "";
+      parent_stack = [];
+      if (selected_dataSet_file) {
+        selected_dataSet_file = 0;
+      } else {
+        selected_dataSet_file = 1;
+      }
+      d3.select("#my_dataviz")
+        .selectAll("svg")
+        .remove();
+      this.updateDataFunc();
+    },
+    myMethod: function(event) {
+      var mybutton = document.getElementById("goToTopBtn");
+      if (this.position >= 1) {
+        mybutton.style.display = "block";
+      } else {
+        mybutton.style.display = "none";
+      }
+
+      var off = 0;
+      off = (this.items.length - 1) * 3.4;
+      var len = (event.target.scrollHeight - off) / this.items.length;
+      var pos = Math.round(event.target.scrollTop / len);
+      this.position = pos;
+      this.position = Math.min(pos, this.items.length - 1);
+      this.findRecord();
+    },
+    findRecord: function() {
+      //console.log("Finding rec",sum_stat_records);
+      for (var i in sum_stat_records) {
+        for (var rec in sum_stat_records[i].value) {
+          if (rec.length) {
+            for (var ind_rec in sum_stat_records[i].value[rec]) {
+              if (
+                sum_stat_records[i].value[rec][ind_rec]["ENCOUNTER"] ==
+                this.items[this.position]["ENCOUNTER"]
+              ) {
+                console.log("Found", y_axix(sum_stat_records[i].value[rec].x0));
+                y_selected_val = y_axix(sum_stat_records[i].value[rec].x0);
+              }
+            }
+          }
+        }
+      }
+      console.log(width, y_selected_val);
+      if (y_selected_val) {
+        d3.select(".mouse-line")
+          .attr("d", function() {
+            // var y_val =  mouse[1] - 2 * margin.top;
+            var d = "M" + 0 + "," + y_selected_val;
+            d += " " + width + "," + y_selected_val;
+            return d;
+          })
+          .style("opacity", "0.7");
+      }
+    },
+
+    setDataValue: function(data) {
+      this.items = data;
+    },
+
     //tree================================/
     treefun: function() {
       //tree taxonomy
@@ -346,11 +422,6 @@ export default {
         event.target.scrollHeight
       );
     },
-    setNewValue: function(data) {
-      console.log("Data Set %%%%%%%%%%%%%%%%%%%%", data);
-      this.items = data;
-      console.log(this.items);
-    },
 
     tempfn: function() {
       alert("gqacdjgaef");
@@ -389,6 +460,10 @@ export default {
 
       // updateDataFunc: function updateData() {
 
+      d3.json("keywords.json", function(data) {
+        that.keywords = data["array"];
+        console.log(that.keywords);
+      });
       // set the dimensions and margins of the graph
       var margin = { top: 10, right: 30, bottom: 30, left: 40 },
         width = 460 - margin.left - margin.right,
@@ -417,242 +492,263 @@ export default {
 
       var svg_transition = d3.select("#my_dataviz").transition();
       var glob_sumstat;
-      d3.csv("final_1.csv", function(data_patient) {
-        // console.log("patient 1 csv", data_patient);
-
+      d3.csv(patients[selected_dataSet_file], function(data_patient) {
         var svg_transition = d3.select("#my_dataviz").transition();
-        d3.csv("final_1.csv", function(data_patient) {
-          // Read the data and compute summary statistics for each specie
+        // Read the data and compute summary statistics for each specie
 
-          var y = d3
-            .scaleTime()
-            .domain(
-              d3.extent(data_patient, function(d) {
-                // return new Date(d.start);
-                let mydate = Date.parse(d.start, "mm/dd/yyyy");
+        var y = d3
+          .scaleTime()
+          .domain(
+            d3.extent(data_patient, function(d) {
+              // return new Date(d.start);
+              let mydate = Date.parse(d.start, "mm/dd/yyyy");
 
-                return mydate;
-              })
-            )
-            .range([50, width]);
-          svg.append("g").call(d3.axisLeft(y));
-
-          // Features of the histogram
-          var histogram = d3
-            .histogram()
-            .domain(function() {
-              return y.domain().map(function(d) {
-                return Date.parse(d);
-              });
+              return mydate;
             })
-            .thresholds(y.ticks(20)) // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
-            .value(function(d) {
+          )
+          .range([50, width]);
+        y_axix = y;
+        svg.append("g").call(d3.axisLeft(y));
+
+        // Features of the histogram
+        var histogram = d3
+          .histogram()
+          .domain(function() {
+            return y.domain().map(function(d) {
+              return Date.parse(d);
+            });
+          })
+          .thresholds(y.ticks(20)) // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
+          .value(function(d) {
+            return Date.parse(d.start, "mm/dd/yyyy");
+          });
+
+        var record = [];
+        var sumstat = d3
+          .nest() // nest function allows to group the calculation per level of a factor
+          .key(function(d, i) {
+            if (level_selected == 1 && d["FC Tuples"] == level_value) {
+              record.push(d);
+              return d["Disease Tuples"].trim();
+            } else if (level_selected == 1) {
+              return " ";
+            }
+            if (
+              level_selected == 2 &&
+              d["Disease Tuples"].trim() == level_value
+            ) {
+              record.push(d);
+              return d["Sympton Tuples"].trim();
+            } else if (level_selected == 2) {
+              return " ";
+            }
+
+            if (d[lvl]) {
+              record.push(d);
+              return d[lvl];
+            } else {
+              return " ";
+            }
+          })
+          .rollup(function(d) {
+            // For each key..
+
+            var input = d.map(function(g) {
+              // return Date.parse(g.start, "mm/dd/yyyy");
+              return g;
+            }); // Keep the variable called Sepal_Length
+            var bins = histogram(input); // And compute the binning on it.
+            return bins;
+          })
+          .entries(data_patient);
+
+        sum_stat_records = sumstat;
+        that.setDataValue(record);
+
+        x_domain_values = [];
+        var del_index = -1;
+        for (let index in sumstat) {
+          if (sumstat[index]["key"] == " ") {
+            del_index = index;
+          } else {
+            x_domain_values.push(sumstat[index]["key"]);
+          }
+        }
+        sumstat.splice(del_index, 1);
+
+        // What is the biggest number of value in a bin? We need it cause this value will have a width of 100% of the bandwidth.
+        var maxNum = 0;
+
+        for (let i in sumstat) {
+          var allBins = sumstat[i].value;
+          var lengths = allBins.map(function(a) {
+            return a.length;
+          });
+          var longuest = d3.max(lengths);
+          if (longuest > maxNum) {
+            maxNum = longuest;
+          }
+        }
+
+        if (level_selected == 0) {
+          initial_max = maxNum;
+        }
+
+        var x_top = d3
+          .scaleBand()
+          .range([0, width])
+          .domain(x_domain_values)
+          .padding(0.05); // This is important: it is the space between 2 groups. 0 means no padding. 1 is the maximum.
+
+        var x_label_axis = svg
+          .append("g")
+          .attr("transform", "translate(0," + 30 + ")")
+          .attr("class", "axisRed")
+          .call(d3.axisTop(x_top))
+          .selectAll("text")
+          .attr("transform", "rotate(-25) translate(25,20)")
+          .style("font-size", "small")
+          .style("fill", function(d, i) {
+            if (level_selected == 0) {
+              return color(i);
+            }
+            if (level_selected == 1) {
+              return nextLevelColors[selected_index](i);
+            }
+            return color(selected_index);
+          })
+          .on("click", function(d, i) {
+            if (level_selected == 2) {
+              return;
+            }
+            document.getElementById("back-button").style.visibility = "visible";
+            parent_stack.push(level_value);
+            if (level_selected == 0) {
+              selected_index = x_domain_values.findIndex(function(val) {
+                return val == d;
+              });
+            }
+            level_selected += 1;
+            level_value = d;
+            // change code to color
+            // console.log("Parent Stack ", parent_stack);
+            d3.select("#my_dataviz")
+              .selectAll("svg")
+              .remove();
+            that.updateDataFunc();
+          });
+
+        // The maximum width of a violin must be x.bandwidth = the width dedicated to a group
+        var xNum = d3
+          .scaleLinear()
+          .range([0, x_top.bandwidth()])
+          .domain([-initial_max, initial_max]);
+
+        // This allows to find the closest X index of the mouse:
+        var bisect = d3.bisector(function(d) {
+          return d.x;
+        }).left;
+
+        var div_selected = d3
+          .select("#my_dataviz")
+          .append("div")
+          .attr("class", "tooltip")
+          .style("opacity", 0);
+        // Add the shape to this svg!
+        svg
+          .selectAll("myViolin")
+          .data(sumstat)
+          .enter() // So now we are working group per group
+          .append("g")
+          .attr("transform", function(d) {
+            return "translate(" + x_top(d.key) + " ,0)";
+          }) // Translation on the right to be at the group position
+          .append("path")
+          .datum(function(d) {
+            return d.value;
+          }) // So now we are working bin per bin
+          .style("stroke", "none")
+          .style("fill", function(d, i) {
+            if (level_selected == 0) {
+              return color(i);
+            }
+            if (level_selected == 1) {
+              return nextLevelColors[selected_index](i);
+            }
+            return color(selected_index);
+          })
+          .attr(
+            "d",
+            d3
+              .area()
+              .x0(function(d) {
+                if (d.length == 0) {
+                  return xNum(0.1);
+                }
+                return xNum(-d.length);
+              })
+              .x1(function(d) {
+                return xNum(d.length);
+              })
+              .y(function(d) {
+                return y(d.x0);
+              })
+              .curve(d3.curveCatmullRom) // This makes the line smoother to give the violin appearance. Try d3.curveStep to see the difference
+          )
+
+          .on("mousemove", function(data, i) {
+            // console.log("Data", data);
+            var mappedVales = data.map(x => x.x0);
+
+            var y_scaled = y.invert(d3.mouse(this)[1]);
+            // console.log("Y", y_scaled, mappedVales);
+            var index = d3.bisectLeft(mappedVales, y_scaled);
+            var selectedData = mappedVales[index];
+            // console.log("Selected Index : ", index, selectedData);
+
+            div_selected
+              .transition()
+              .duration(200)
+              .style("opacity", 0.9);
+            div_selected
+              .html(data[index].length)
+              .style("left", d3.event.pageX - 250 + "px")
+              .style("top", d3.event.pageY - 110 + "px");
+          })
+          .on("mouseout", function(n) {
+            div_selected
+              .transition()
+              .duration(500)
+              .style("opacity", 0);
+          });
+
+        var div_selected1 = d3
+          .select("#my_dataviz")
+          .on("mousemove", function(data, i) {
+            var mouse = d3.mouse(this);
+
+            d3.select(".mouse-line").attr("d", function() {
+              var y_val = mouse[1] - 2 * margin.top;
+              var d = "M" + 0 + "," + y_selected_val;
+              d += " " + width + "," + y_selected_val;
               return d;
             });
+          })
+          .on("mouseover", function(d) {})
+          .on("mouseout", function() {
+            // on mouse out hide line, circles and text
+          });
 
-          var record = [];
-          var sumstat = d3
-            .nest() // nest function allows to group the calculation per level of a factor
-            .key(function(d, i) {
-              if (level_selected == 1 && d["FC Tuples"] == level_value) {
-                record.push(d);
-                console.log("Record", d);
-                return d["Disease Tuples"].trim();
-              } else if (level_selected == 1) {
-                return " ";
-              }
-              if (
-                level_selected == 2 &&
-                d["Disease Tuples"].trim() == level_value
-              ) {
-                console.log("Disease-------", d);
-                record.push(d);
-                return d["Sympton Tuples"].trim();
-              } else if (level_selected == 2) {
-                return " ";
-              }
+        var mouseG = svg.append("g").attr("class", "mouse-over-effects");
 
-              if (d[lvl]) {
-                // console.log(i, d[lvl]);
-                record.push(d);
-                return d[lvl];
-              } else {
-                return " ";
-              }
-            })
-            .rollup(function(d) {
-              // For each key..
+        mouseG
+          .append("path") // this is the black vertical line to follow mouse
+          .attr("class", "mouse-line")
+          .style("stroke", "black")
+          .style("stroke-width", "1px")
+          .style("opacity", "1");
+        that.findRecord();
 
-              var input = d.map(function(g) {
-                return Date.parse(g.start, "mm/dd/yyyy");
-              }); // Keep the variable called Sepal_Length
-              var bins = histogram(input); // And compute the binning on it.
-              return bins;
-            })
-            .entries(data_patient);
-
-          that.setNewValue(record);
-
-          x_domain_values = [];
-          var del_index = -1;
-          for (let index in sumstat) {
-            if (sumstat[index]["key"] == " ") {
-              del_index = index;
-            } else {
-              x_domain_values.push(sumstat[index]["key"]);
-            }
-          }
-          sumstat.splice(del_index, 1);
-
-          // What is the biggest number of value in a bin? We need it cause this value will have a width of 100% of the bandwidth.
-          var maxNum = 0;
-          console.log("Sum Stats", sumstat);
-
-          for (let i in sumstat) {
-            var allBins = sumstat[i].value;
-            var lengths = allBins.map(function(a) {
-              return a.length;
-            });
-            var longuest = d3.max(lengths);
-            if (longuest > maxNum) {
-              maxNum = longuest;
-            }
-          }
-
-          if (level_selected == 0) {
-            initial_max = maxNum;
-          }
-
-          var x_top = d3
-            .scaleBand()
-            .range([0, width])
-            .domain(x_domain_values)
-            .padding(0.05); // This is important: it is the space between 2 groups. 0 means no padding. 1 is the maximum.
-
-          var x_label_axis = svg
-            .append("g")
-            .attr("transform", "translate(0," + 30 + ")")
-            .attr("class", "axisRed")
-            .call(d3.axisTop(x_top))
-            .selectAll("text")
-            .attr("transform", "rotate(-25) translate(25,20)")
-            .style("font-size", "small")
-            .style("fill", function(d, i) {
-              if (level_selected == 0) {
-                return color(i);
-              }
-              if (level_selected == 1) {
-                return nextLevelColors[selected_index](i);
-              }
-              return color(selected_index);
-            })
-            .on("click", function(d, i) {
-              if (level_selected == 2) {
-                return;
-              }
-              document.getElementById("back-button").style.visibility =
-                "visible";
-              parent_stack.push(level_value);
-              if (level_selected == 0) {
-                selected_index = x_domain_values.findIndex(function(val) {
-                  return val == d;
-                });
-              }
-              level_selected += 1;
-              level_value = d;
-              // change code to color
-              // console.log("Parent Stack ", parent_stack);
-              d3.select("#my_dataviz")
-                .selectAll("svg")
-                .remove();
-              that.updateDataFunc();
-            });
-
-          // The maximum width of a violin must be x.bandwidth = the width dedicated to a group
-          var xNum = d3
-            .scaleLinear()
-            .range([0, x_top.bandwidth()])
-            .domain([-initial_max, initial_max]);
-
-          // This allows to find the closest X index of the mouse:
-          var bisect = d3.bisector(function(d) {
-            return d.x;
-          }).left;
-
-          var div_selected = d3
-            .select("#my_dataviz")
-            .append("div")
-            .attr("class", "tooltip")
-            .style("opacity", 0);
-          // Add the shape to this svg!
-          svg
-            .selectAll("myViolin")
-            .data(sumstat)
-            .enter() // So now we are working group per group
-            .append("g")
-            .attr("transform", function(d) {
-              console.log(d, d.key, x_top(d.key));
-              return "translate(" + x_top(d.key) + " ,0)";
-            }) // Translation on the right to be at the group position
-            .append("path")
-            .datum(function(d) {
-              return d.value;
-            }) // So now we are working bin per bin
-            .style("stroke", "none")
-            .style("fill", function(d, i) {
-              if (level_selected == 0) {
-                return color(i);
-              }
-              if (level_selected == 1) {
-                return nextLevelColors[selected_index](i);
-              }
-              return color(selected_index);
-            })
-            .attr(
-              "d",
-              d3
-                .area()
-                .x0(function(d) {
-                  if (d.length == 0) {
-                    return xNum(0.1);
-                  }
-                  return xNum(-d.length);
-                })
-                .x1(function(d) {
-                  return xNum(d.length);
-                })
-                .y(function(d) {
-                  return y(d.x0);
-                })
-                .curve(d3.curveCatmullRom) // This makes the line smoother to give the violin appearance. Try d3.curveStep to see the difference
-            )
-
-            .on("mousemove", function(data, i) {
-              // console.log("Data", data);
-              var mappedVales = data.map(x => x.x0);
-
-              var y_scaled = y.invert(d3.mouse(this)[1]);
-              // console.log("Y", y_scaled, mappedVales);
-              var index = d3.bisectLeft(mappedVales, y_scaled);
-              var selectedData = mappedVales[index];
-              // console.log("Selected Index : ", index, selectedData);
-
-              div_selected
-                .transition()
-                .duration(200)
-                .style("opacity", 0.9);
-              div_selected
-                .html(data[index].length)
-                .style("left", d3.event.pageX - 250 + "px")
-                .style("top", d3.event.pageY - 110 + "px");
-            })
-            .on("mouseout", function(n) {
-              div_selected
-                .transition()
-                .duration(500)
-                .style("opacity", 0);
-            });
-        });
         //horizontal bar chart
         var margin_for_bar_chart = { top: 5, right: 5, bottom: 5, left: 5 },
           width_for_bar_chart = 200 - margin.left - margin.right,
@@ -663,175 +759,6 @@ export default {
         });
         var FCs_unique = [...new Set(FCs)];
 
-        // Read the data and compute summary statistics for each specie
-        d3.csv(
-          "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv",
-          function(data) {
-            var y = d3
-              .scaleTime()
-              .domain(
-                d3.extent(data_patient, function(d) {
-                  // return new Date(d.start);
-                  let mydate = Date.parse(d.start, "mm/dd/yyyy");
-
-                  return mydate;
-                })
-              )
-              .range([50, width]);
-            svg.append("g").call(d3.axisLeft(y));
-
-            // Features of the histogram
-            var histogram = d3
-              .histogram()
-              .domain(function() {
-                // console.log("Hist Domain",y.domain().map(function(d){ return Date.parse(d)}));
-
-                return y.domain().map(function(d) {
-                  return Date.parse(d);
-                });
-              })
-              .thresholds(y.ticks(20)) // Important: how many bins approx are going to be made? It is the 'resolution' of the violin plot
-              .value(function(d) {
-                // console.log("Hist",d);
-                return d;
-              });
-
-            var sumstat = d3
-              .nest() // nest function allows to group the calculation per level of a factor
-              .key(function(d, i) {
-                // return d.Species;
-                if (level_selected == 1 && d["FC Tuples"] == level_value) {
-                  return d["Disease Tuples"].trim();
-                } else if (level_selected == 1) {
-                  return " ";
-                }
-                // console.log(d["Disease Tuples"],level_value);
-                if (
-                  level_selected == 2 &&
-                  d["Disease Tuples"].trim() == level_value
-                ) {
-                  return d["Sympton Tuples"].trim();
-                } else if (level_selected == 2) {
-                  return " ";
-                }
-
-                if (d[lvl]) {
-                  return d[lvl];
-                } else {
-                  return " ";
-                }
-              })
-              .rollup(function(d) {
-                // For each key..
-                var input = d.map(function(g) {
-                  // return g.Sepal_Length;
-                  return Date.parse(g.start, "mm/dd/yyyy");
-                }); // Keep the variable called Sepal_Length
-                // console.log("Input", input);
-                var bins = histogram(input); // And compute the binning on it.
-                console.log("Bins", bins);
-                return bins;
-              })
-              // .entries(data);
-              .entries(data_patient);
-            console.log("afsdfasdf", sumstat);
-
-            x_domain_values = [];
-            var del_index = -1;
-            for (let index in sumstat) {
-              if (sumstat[index]["key"] == " ") {
-                console.log("Found", sumstat[index], index);
-                del_index = index;
-                console.log("XXXXXX to x_domain", sumstat[index]["key"]);
-              } else {
-                x_domain_values.push(sumstat[index]["key"]);
-                console.log("Added to x_domain", sumstat[index]["key"]);
-              }
-              // console.log("afsdfasdf",sumstat[index], index);
-            }
-            sumstat.splice(del_index, 1);
-            // What is the biggest number of value in a bin? We need it cause this value will have a width of 100% of the bandwidth.
-            var maxNum = 0;
-            console.log("Sum Stats", sumstat);
-
-            for (let i in sumstat) {
-              var allBins = sumstat[i].value;
-              // console.log("All Bins: ", allBins);
-              var total_len = 0;
-              var lengths = allBins.map(function(a) {
-                total_len += a.length;
-                return a.length;
-              });
-              console.log("Total", total_len);
-              sumstat[i]["total_len"] = total_len;
-              var longuest = d3.max(lengths);
-              if (longuest > maxNum) {
-                maxNum = longuest;
-              }
-            }
-
-            if (level_selected == 0) {
-              initial_max = maxNum;
-            }
-            glob_sumstat = sumstat;
-            // Build and Show the X scale. It is a band scale like for a boxplot: each group has an dedicated RANGE on the axis. This range has a length of x.bandwidth
-            var x_domain_values_new = x_domain_values.map(function(d) {
-              // console.log("Map Func",typeof(d));
-              return d.trim();
-            });
-            var zp = 0;
-
-            var bars = 0;
-            var bar_titles = [];
-
-            x_domain_values_new.map(function(d) {
-              console.log("Map Func:", d, ":", zp++);
-              bar_titles.push(d);
-              // return d.trim();
-            });
-
-            bars = zp;
-            console.log("Bas count: ", bars);
-            console.log("titles:  ", bar_titles);
-
-            var x = d3
-              .scaleBand()
-              .range([0, width])
-              // .domain(["setosa", "versicolor", "virginica"])
-              .domain(x_domain_values_new)
-              .padding(0.05); // This is important: it is the space between 2 groups. 0 means no padding. 1 is the maximum.
-
-            var x_top = d3
-              .scaleBand()
-              .range([0, width])
-              // .domain(["setosa", "versicolor", "virginica"])
-              .domain(x_domain_values_new)
-              .padding(0.05); // This is important: it is the space between 2 groups. 0 means no padding. 1 is the maximum.
-
-            // Compute the binning for each group of the dataset
-
-            // The maximum width of a violin must be x.bandwidth = the width dedicated to a group
-            var xNum = d3
-              .scaleLinear()
-              .range([0, x.bandwidth()])
-              .domain([-initial_max, initial_max]);
-
-            // This allows to find the closest X index of the mouse:
-            var bisect = d3.bisector(function(d) {
-              return d.x;
-            }).left;
-
-            var div_selected = d3
-              .select("#my_dataviz")
-              .append("div")
-              .attr("class", "tooltip")
-              .style("opacity", 0);
-
-            barchart(sumstat);
-
-            //call barchart
-          }
-        );
         function barchart(glob_sumstat) {
           //horizontal bar chart
           var l = 0;
