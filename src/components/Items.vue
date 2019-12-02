@@ -1,10 +1,6 @@
 <template>
   <div class="box">
-    <!-- <p>{{this.props.data}}</p> -->
-    <h4>{{this.keywords["ENCOUNTER"]}}</h4>
-    <p>{{this.mydata["start"]}}</p>
-    <p>{{this.mydata["stop"]}}</p>
-    <p>{{this.mydata["Date_of_birth"]}}</p>
+    <h4>Name: John Wick</h4>
     <text-highlight :queries="keywords" @click="alert">{{ this.mydata["Medical record"] }}</text-highlight>
   </div>
 </template>
@@ -47,6 +43,12 @@ export default {
   },
   mounted: function() {
     this.tempfn();
+  },
+  computed: {
+    datawithbr: function() {
+      const doc = this.mydata["Medical record"];
+      return doc.replace(/(\\r)*\\n/g, "<br>");
+    }
   }
 };
 </script>

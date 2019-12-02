@@ -1,50 +1,35 @@
 <template>
   <div class="d-flex" id="wrapper" style="margin-left:2%;">
     <div style="height:300px; width:11%;">
-      <button id="toggleData" type="button" @click="onToggleData">Toggle Data</button>
-      <div style="background-color: lightgray;text-align: left" class="sidebar-heading">
+      <b-button
+        id="toggleData"
+        class="mb-3 bg-primary"
+        type="button"
+        @click="onToggleData"
+      >Toggle Data</b-button>
+      <div class="sidebar-heading text-center m-1">
         <b style="margin-left:2%;">Patient Information</b>
       </div>
-      <div style="background-color: lightgray; overflow:hidden;" id="patientinfo"></div>
+      <div
+        style="background-color: lightgray; overflow:hidden; border-radius: 5px;"
+        id="patientinfo"
+      ></div>
       <div style="margin-top: 20%;" class="sidebar-heading">
         <b>Filter Collection</b>
       </div>
-      <div>
-        <button
-          style="color:blue; cursor: pointer; border-radius: 40px; background-color: lightgray; "
-          class="list-group-item list-group-item-action"
-          type="button"
-          @click="tempfn"
-        >
-          <b>disease1</b>
-        </button>
-        <button
-          style="color:red; cursor: pointer; border-radius: 40px; background-color: lightgray; margin-top:1%;"
-          class="list-group-item list-group-item-action"
-          type="button"
-        >
-          <b>disease2</b>
-        </button>
-        <button
-          style="color:green; cursor: pointer; border-radius: 40px; background-color: lightgray; margin-top:1%;"
-          class="list-group-item list-group-item-action"
-          type="button"
-        >
-          <b>disease3</b>
-        </button>
-        <button
-          style="color:brown; cursor: pointer; border-radius: 40px; background-color: lightgray; margin-top:1%;"
-          class="list-group-item list-group-item-action"
-          type="button"
-        >
-          <b>disease4</b>
-        </button>
+      <div class="div_fc">
+        <!-- <span
+          v-for="item in diseasesFc"
+          :key="item"
+          style="border-radius: 5px; background-color: lightgray; "
+          class="list-group-item p-1 mb-1"
+        >{{ item }}</span>-->
       </div>
     </div>
 
     <!-- Volin Plot From here -->
     <div class="position-relative" style="margin-left:2%">
-      <b-button id="back-button" @click="onClickBack">Back</b-button>
+      <b-button class="bg-info" id="back-button" @click="onClickBack">Back</b-button>
       <div id="my_dataviz"></div>
 
       <!-- <button type="button" @click="treefun">Tree</button> -->
@@ -117,7 +102,8 @@ export default {
     return {
       items: res,
       position: 0,
-      keywords: []
+      keywords: [],
+      diseasesFc: []
     };
   },
   components: {
@@ -446,7 +432,7 @@ export default {
     },
 
     updateDataFunc: function() {
-      console.log(this.$refs["scroller"]);
+      // console.log(this.$refs["scroller"]);
       // this.$refs["scroller"].setScrollTop();
       var that = this;
 
@@ -566,6 +552,25 @@ export default {
             x_domain_values.push(sumstat[index]["key"]);
           }
         }
+
+        if (level_selected == 0) {
+          d3.select(".div_fc")
+            .selectAll("*")
+            .remove();
+
+          d3.select(".div_fc")
+            .selectAll("span")
+            .data(x_domain_values)
+            .enter()
+            .append("span")
+            .text(function(d) {
+              return d;
+            })
+            .attr("class", "list-group-item p-1 mb-1 text-white rounded")
+            .style("background-color", function(d, i) {
+              return d3.rgb(color(i)).brighter(1);
+            });
+        }
         sumstat.splice(del_index, 1);
 
         // What is the biggest number of value in a bin? We need it cause this value will have a width of 100% of the bandwidth.
@@ -573,6 +578,12 @@ export default {
 
         for (let i in sumstat) {
           var allBins = sumstat[i].value;
+          var total_len = 0;
+          var lengths = allBins.map(function(a) {
+            total_len += a.length;
+            return a.length;
+          });
+          sumstat[i]["total_len"] = total_len;
           var lengths = allBins.map(function(a) {
             return a.length;
           });
@@ -750,106 +761,104 @@ export default {
           return d.Filter_Collection;
         });
         var FCs_unique = [...new Set(FCs)];
-
-        function barchart(glob_sumstat) {
-          //horizontal bar chart
-          var l = 0;
-          for (var a in glob_sumstat) {
-            l++;
-          }
-          var margin_for_bar_chart = { top: 5, right: 5, bottom: 5, left: 5 },
-            width_for_bar_chart = 200 - margin.left - margin.right,
-            height_for_bar_chart = 25 * l + 100 - margin.top - margin.bottom;
-
-          var svg1 = d3
-            .select("#my_dataviz")
-            .append("svg")
-            .attr(
-              "width",
-              width_for_bar_chart +
-                margin_for_bar_chart.left +
-                margin_for_bar_chart.right
-            )
-            .attr(
-              "height",
-              height_for_bar_chart +
-                margin_for_bar_chart.top +
-                margin_for_bar_chart.bottom
-            )
-            .append("g")
-            .attr(
-              "transform",
-              "translate(" +
-                margin_for_bar_chart.left +
-                "," +
-                margin_for_bar_chart.top +
-                ")"
-            );
-
-          var x = d3.scaleLinear().range([0, width_for_bar_chart]);
-          var y = d3.scaleBand().range([height_for_bar_chart, 0]);
-
-          glob_sumstat.sort(function(a, b) {
-            return a.total_len - b.total_len;
-          });
-
-          console.log("reaching here", glob_sumstat);
-
-          x.domain([
-            0,
-            d3.max(glob_sumstat, function(d) {
-              return d.total_len;
-            })
-          ]);
-          y.domain(
-            glob_sumstat.map(function(d, i) {
-              return i;
-            })
-          ).padding(0.1);
-
-          svg1
-            .selectAll(".bar")
-            .data(glob_sumstat)
-            .enter()
-            .append("rect")
-            .attr("class", "bar")
-            .attr("x", 0)
-            .style("fill", "lightgray")
-            .attr("height", 25)
-            .attr("y", function(d, i) {
-              return y(i) - 5;
-            })
-            .attr("width", function(d) {
-              return x(d.total_len);
-            });
-
-          svg1
-            .selectAll("text")
-            .data(glob_sumstat)
-            .enter()
-            .append("text")
-            .style("text-anchor", "start")
-            .text(function(d) {
-              return d.key;
-            })
-            .attr("x", 0)
-            .attr("y", function(d, i) {
-              return y(i) + 12;
-            })
-            .style("width", "20px")
-            .style("font-size", "12px")
-            .style("fill", function(d, i) {
-              if (level_selected == 0) {
-                var original_index = x_domain_values.findIndex(function(val) {
-                  return val == d.key;
-                });
-                return color(original_index);
-              }
-              return color(selected_index);
-            });
-        }
+        barchart(sumstat);
       }); //final_1 csv closed here
 
+      function barchart(glob_sumstat) {
+        //horizontal bar chart
+        var l = 0;
+        for (var a in glob_sumstat) {
+          l++;
+        }
+        var margin_for_bar_chart = { top: 5, right: 5, bottom: 5, left: 5 },
+          width_for_bar_chart = 200 - margin.left - margin.right,
+          height_for_bar_chart = 25 * l + 100 - margin.top - margin.bottom;
+
+        var svg1 = d3
+          .select("#my_dataviz")
+          .append("svg")
+          .attr(
+            "width",
+            width_for_bar_chart +
+              margin_for_bar_chart.left +
+              margin_for_bar_chart.right
+          )
+          .attr(
+            "height",
+            height_for_bar_chart +
+              margin_for_bar_chart.top +
+              margin_for_bar_chart.bottom
+          )
+          .append("g")
+          .attr(
+            "transform",
+            "translate(" +
+              margin_for_bar_chart.left +
+              "," +
+              margin_for_bar_chart.top +
+              ")"
+          );
+
+        var x = d3.scaleLinear().range([0, width_for_bar_chart]);
+        var y = d3.scaleBand().range([height_for_bar_chart, 0]);
+
+        glob_sumstat.sort(function(a, b) {
+          return a.total_len - b.total_len;
+        });
+
+        x.domain([
+          0,
+          d3.max(glob_sumstat, function(d) {
+            return d.total_len;
+          })
+        ]);
+        y.domain(
+          glob_sumstat.map(function(d, i) {
+            return i;
+          })
+        ).padding(0.1);
+
+        svg1
+          .selectAll(".bar")
+          .data(glob_sumstat)
+          .enter()
+          .append("rect")
+          .attr("class", "bar")
+          .attr("x", 0)
+          .style("fill", "lightgray")
+          .attr("height", 25)
+          .attr("y", function(d, i) {
+            return y(i) - 5;
+          })
+          .attr("width", function(d) {
+            return x(d.total_len);
+          });
+
+        svg1
+          .selectAll("text")
+          .data(glob_sumstat)
+          .enter()
+          .append("text")
+          .style("text-anchor", "start")
+          .text(function(d) {
+            return d.key;
+          })
+          .attr("x", 0)
+          .attr("y", function(d, i) {
+            return y(i) + 12;
+          })
+          .style("width", "20px")
+          .style("font-size", "12px")
+          .style("fill", function(d, i) {
+            if (level_selected == 0) {
+              var original_index = x_domain_values.findIndex(function(val) {
+                return val == d.key;
+              });
+              return color(original_index);
+            }
+            return color(selected_index);
+          });
+      }
       //patient info tab dynamic property
       d3.select("#patientinfo")
         .selectAll("*")
@@ -871,7 +880,7 @@ export default {
           .append("h6")
           .style("width", "150px")
           .style("margin-top", "11%")
-          .style("margin-left", "2%")
+          .style("margin-left", "4%")
           .text(function(d) {
             return d.key + ": ";
           })
