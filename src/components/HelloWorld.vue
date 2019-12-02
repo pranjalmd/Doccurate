@@ -2,7 +2,7 @@
   <div class="d-flex" id="wrapper" style="margin-left:2%;">
     
 
-    <div class="blur" style="margin-left:2%;  border:1px solid black; padding:8px">
+    <div class="blur" style="margin-left:2%; padding:8px">
       <line-chart></line-chart>
     </div>
 
