@@ -1,11 +1,11 @@
 <template>
   <div class="box">
-    <text-highlight :queries="keywords">{{ this.mydata["Medical record"] }}</text-highlight>
     <!-- <p>{{this.props.data}}</p> -->
     <h4>{{this.keywords["ENCOUNTER"]}}</h4>
     <p>{{this.mydata["start"]}}</p>
     <p>{{this.mydata["stop"]}}</p>
     <p>{{this.mydata["Date_of_birth"]}}</p>
+    <text-highlight :queries="keywords" @click="alert">{{ this.mydata["Medical record"] }}</text-highlight>
   </div>
 </template>
 
@@ -23,6 +23,10 @@ export default {
     keywords: {
       type: Array,
       default: [1]
+    },
+    itemFunction: {
+      type: Function,
+      required: true
     }
   },
   data() {
@@ -36,6 +40,9 @@ export default {
   methods: {
     tempfn: function() {
       // console.log(this.keywords);
+    },
+    alert: function(data) {
+      this.itemFunction(data);
     }
   },
   mounted: function() {

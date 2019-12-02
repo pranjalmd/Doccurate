@@ -47,15 +47,14 @@
       <b-button id="back-button" @click="onClickBack">Back</b-button>
       <div id="my_dataviz"></div>
 
-      <button type="button" @click="treefun">Tree</button>
+      <!-- <button type="button" @click="treefun">Tree</button> -->
     </div>
 
     <!-- Patient Records from here -->
     <!-- <div style="margin-left:2%; width: 35%;" id="textdetails"> -->
 
     <div style="margin-left:2%; width: 35%;">
-      <div style="background-color:rgba(0,0,0,0.1)">{{items.length}}</div>
-      <div style="background-color:rgba(0,0,0,0.1)">{{this.position + 1}}</div>
+      <div style="background-color:rgba(0,0,0,0.1)">Records {{this.position + 1}} / {{items.length}}</div>
 
       <virtual-list
         :size="1000"
@@ -72,6 +71,7 @@
           v-bind:mydata="val"
           v-bind:keywords="keywords"
           v-bind:class="index"
+          v-bind:itemFunction="treefun"
         ></item-div>
       </virtual-list>
     </div>
@@ -190,7 +190,14 @@ export default {
     },
 
     //tree================================/
-    treefun: function() {
+    treefun: function(event) {
+      console.log(event.target.textContent);
+
+      var t = "";
+      if (event.target.textContent != null) {
+        t = event.target.textContent;
+      }
+
       //tree taxonomy
       var margin = { top: 10, right: 30, bottom: 30, left: 40 };
 
@@ -228,19 +235,15 @@ export default {
         .style("display", "block")
         .style("opacity", "1");
 
-      d3.json("treedata.json", function(error, flare) {
+      d3.json("level_3_trees.json", function(error, flare) {
         if (error) throw error;
-        var temp = flare["children"];
-        console.log(temp);
-        for (var t in temp) {
-          if (temp[t]["name"] == "Cardiovascular") {
-            console.log("inside if");
-            root = d3.hierarchy(temp[t]);
-            root.x0 = 0;
-            root.y0 = 0;
-            update(root);
-          }
-        }
+        console.log(t);
+        console.log(flare[t]);
+
+        root = d3.hierarchy(flare[t]);
+        root.x0 = 0;
+        root.y0 = 0;
+        update(root);
       });
 
       function update(source) {

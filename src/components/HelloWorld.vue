@@ -1,12 +1,10 @@
 <template>
   <div class="d-flex" id="wrapper" style="margin-left:2%;">
-    
-
     <div class="blur" style="margin-left:2%; padding:8px">
       <line-chart></line-chart>
     </div>
 
-    <div style="margin-left:2%; width: 35%;" id="textdetails" ></div>
+    <!-- <div style="margin-left:2%; width: 35%;" id="textdetails" ></div> -->
     <div id="container">
       <div
         id="treeparent"
@@ -18,7 +16,6 @@
       </div>
     </div>
   </div>
-
 </template>
 
 
