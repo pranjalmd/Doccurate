@@ -167,14 +167,12 @@ export default {
                 sum_stat_records[i].value[rec][ind_rec]["ENCOUNTER"] ==
                 this.items[this.position]["ENCOUNTER"]
               ) {
-                console.log("Found", y_axix(sum_stat_records[i].value[rec].x0));
                 y_selected_val = y_axix(sum_stat_records[i].value[rec].x0);
               }
             }
           }
         }
       }
-      console.log(width, y_selected_val);
       if (y_selected_val) {
         d3.select(".mouse-line")
           .attr("d", function() {
@@ -405,22 +403,13 @@ export default {
         mybutton.style.display = "none";
       }
 
-      console.log("adffafsafsafsaf", event);
       var off = 0;
-      // if(this.items.length > 30){
       off = (this.items.length - 1) * 3.4;
-      // }
-      // console.log(off);
       var len = (event.target.scrollHeight - off) / this.items.length;
       var pos = Math.round(event.target.scrollTop / len);
-      // console.log("Position",pos, len, event.target.scrollTop,event.target.scrollHeight, len * this.items.length );
       this.position = pos;
       this.position = Math.min(pos, this.items.length - 1);
-      console.log(
-        event.target.scrollTop,
-        this.position,
-        event.target.scrollHeight
-      );
+      this.findRecord();
     },
 
     tempfn: function() {
@@ -462,7 +451,7 @@ export default {
 
       d3.json("keywords.json", function(data) {
         that.keywords = data["array"];
-        console.log(that.keywords);
+        // console.log(that.keywords);
       });
       // set the dimensions and margins of the graph
       var margin = { top: 10, right: 30, bottom: 30, left: 40 },
